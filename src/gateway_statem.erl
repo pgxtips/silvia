@@ -42,8 +42,14 @@ establish_websocket(internal, connect, Data) ->
 
     #{host := Host, port := Port, path := Path, qs := Qs} = parse_wss_url(Url),
     ?LOG_DEBUG("Connecting to ~p:~p~s~s", [Host, Port, Path, Qs]),
+
+    GunOpts = #{ 
+        transport => tls, 
+        protocols => [http], 
+        tls_opts => [{verify, verify_none}]     
+    },
     
-    case gun:open(Host, Port, #{ transport => tls, protocols => [http] }) of
+    case gun:open(Host, Port, GunOpts) of
         {ok, ConnPid} ->
             NewData = Data#{
                 conn_pid => ConnPid,
@@ -125,6 +131,8 @@ connected(cast, {send_payload, Payload}, Data = #{conn_pid := ConnPid, stream_re
 connected(info, {gun_ws, ConnPid, StreamRef, {text, Msg}},
           Data = #{conn_pid := ConnPid, stream_ref := StreamRef}) ->
     ?LOG_DEBUG("Received websocket text msg: ~s", [Msg]),
+    DecodedMessage = message_parser:parse(Msg),
+
     {keep_state, Data};
 
 %% handles inbound websocket BINARY messages
@@ -178,7 +186,7 @@ parse_wss_url(Url) ->
     end,
 
     Qs = case Query of
-        undefined -> "";
+        undefined -> "?v=10&encoding=json";
         "" -> "";
         Q -> "?" ++ Q
     end,

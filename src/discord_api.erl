@@ -15,9 +15,10 @@ open_gateway() ->
     ],
     Response = httpc:request(get, {RequestURL, RequestHeaders}, HttpOpts, []),
     case Response of
-        {ok, {{_, 200, _}, _Headers, Body}} -> 
-            ?LOG_DEBUG("Response ok: ~s", [Body]),
-            {ok, Body};
+        {ok, {{_, 200, _}, _Headers, JsonBody}} -> 
+            ?LOG_DEBUG("Response ok: ~p", [JsonBody]),
+            DecodedBody = jsx:decode(list_to_binary(JsonBody)),
+            {ok, DecodedBody};
         {ok, {{_, Status, _}, Headers, Body}} ->
             Error = io:format("HTTP error ~p~nHeaders: ~p~nBody: ~s~n", [Status, Headers, Body]),
             ?LOG_DEBUG("Response error: ~s", [Error]),

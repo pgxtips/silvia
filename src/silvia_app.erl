@@ -11,6 +11,7 @@
 
 start(_StartType, _StartArgs) ->
     ssl:start(),
+    {ok, _} = application:ensure_all_started(gun),
     silvia_sup:start_link().
 
 stop(_State) ->
